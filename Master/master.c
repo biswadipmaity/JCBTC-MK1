@@ -6,6 +6,12 @@
 #pragma inline delay
 
 #pragma warning disable 1385
+#pragma warning disable 359
+
+unsigned char speed_motor1;
+unsigned char speed_motor2;
+unsigned char speed_motor3;
+unsigned char speed_motor4;
 
 void hold(int x)
 {
@@ -25,22 +31,14 @@ void hold(int x)
 #include "servo.h"
 #include "usart.h"
 #include "backlit.h"
-#include "xbee.h"
-#include "serial.h"
 
 #define steps 50
-#define COMMAND_ARRAY_LENGTH 20
 
 #define i2c_RPi_DELIMITER '^'
 #define i2c_Master_DELIMITER '@'
-#define BYTE unsigned char
 
-
-int commandFlag = 0;
-int length = 0;
-BYTE commandArray[COMMAND_ARRAY_LENGTH];
-
-enum
+int length=0;
+enum 
 {
 	ULTRASONIC,
 	PI,
@@ -48,25 +46,22 @@ enum
 	SLEEP
 }receiver_i2c_state;
 
-
 enum
 {
-	pi_sleep = 0,
-	pi_setMotors = 10,
-	pi_getMotor = 11,
-	pi_setMotor = 12,
-	pi_getNetwork = 20,
-	pi_networkMessage = 21,
-	pi_clearLCD = 31,
-	pi_LCDSetCursor = 32,
-	pi_lCDPutChar = 33,
-	pi_lCDPrint = 34
-	pi_getPan = 41,
-	pi_getTilt = 42,
-	pi_setPan = 43,
-	pi_setTilt = 44,
-	pi_ping = 50
-}receiver_pi_function;
+	RPI_SLEEP,
+	RPI_START,
+	M1_DIRECTION,
+	M1_SPEED,
+	M2_DIRECTION,
+	M2_SPEED,
+	M3_DIRECTION,
+	M3_SPEED,
+	M4_DIRECTION,
+	M4_SPEED,
+	RPI_STOP
+}receiver_pi_state;
+
+#include "rpistates.h"
 
 unsigned char c;
 
@@ -79,23 +74,23 @@ void main()
 	PORTC=0x00;
 	PORTD=0x00;
 	PORTE=0x00;
-
+	
 	USBEN=0;
 	UTRDIS=1;
 	ADCON1=0x0F;
 	CMCON=0x07;
 	T0SE=1;
 	T0CS=0;
-
-	TRISA=0x00;
+	
+	TRISA=0x00;		
 	TRISB=0b00000011;
 	TRISC=0b11000000;
 	TRISD=0x00;
 	TRISE=0x00;
-
+	
 	wheel_state=off;
 	update_wheel();
-
+	
 	BACKLIT=0;
 	lcd_init();
 
@@ -103,7 +98,6 @@ void main()
 
 	lcd_command(0x80);
 	lcd_writeString(">");
-
 
 	init_i2c();
 	i2c_start();
@@ -118,7 +112,7 @@ void main()
 	BACKLIT=1;
 	initBacklit();
 	backlit_dim=dim_in;
-
+	
 	USARTInit();
 
 	PEIE=1;
@@ -126,9 +120,27 @@ void main()
 
 	servo_reset();
 	receiver_i2c_state=SLEEP;
-	receiver_pi_function=pi_sleep;
+	receiver_pi_state=RPI_SLEEP;
 
-
+	if(i2c_test_write())
+		while(1)
+		{
+			c=i2c_read();
+			idle_i2c();
+			i2c_read_ack();
+			idle_i2c();
+ 			if(c!='$')
+			{
+lcd_data(c);
+			}
+			while(!rpi_buffer_empty())
+			{
+				char c=rpi_buffer_pop();
+				take_action(c);
+			}
+			hold(2);
+		}
+/* OLD CODE:
 	current_state=action_sleep;
 
 	if(i2c_test_write())
@@ -258,18 +270,20 @@ void main()
 			if(current_state!=action_sleep)
 				continue;
 
-/* NOTE: COMMENTED APPREHENDING CONFLICT WITH STATE MACHINE ABOVE, HOWEVER, BUFFER MUST BE FLUSHED
+// NOTE: COMMENTED APPREHENDING CONFLICT WITH STATE MACHINE ABOVE, HOWEVER, BUFFER MUST BE FLUSHED
 			while(!rpi_buffer_empty())
 			{
 				char c=rpi_buffer_pop();
 				take_action(c);
 				while((current_state!=action_sleep)&&(rpi_buffer_empty()));
 			}
-*/
+
 			hold(2);
 
 		 	//move();
 		}
 	lcd_command(0xa8);	//Next Line={128+40}H
 	lcd_writeString("JCBTC");
+
+*/
 }

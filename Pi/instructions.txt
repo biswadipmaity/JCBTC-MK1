@@ -1,0 +1,80 @@
+## change date and time
+
+sudo date -s "Thu Aug 9 21:31:26 UTC 2012"
+
+###############################################################################
+
+## install drivers
+
+$ cd /tmp
+$ wget https://dl.dropboxusercontent.com/u/67643651/mt7601_3.12.28_710.tar.gz
+# OR copy from our setup files (we use RPi 3.12.28.709)
+$ sudo tar xf mt7601_3.12.28_710.tar.gz -C /
+$ sudo depmod 3.12.28+
+
+$ sudo nano /etc/network/interfaces 
+# change all instances of wlan0 to ra0)
+
+$ sudo reboot
+
+$ cd /etc/apt/apt.conf.d
+
+# create a file named 10proxy:
+$ sudo nano 10proxy
+	Acquire::http::Proxy "http://yourproxyaddress:proxyport/";
+
+$ sudo reboot
+
+$ sudo apt-get install xrdp
+
+###############################################################################
+
+## change keyboard layout
+
+$ sudo raspi-config
+
+# pick the desired layout
+4. Internationalization Option
+I3. Change Keyboard Layout
+Generic 104-key PC
+Other
+English (US)
+English (US)
+The default for the keyboard layout
+No compose key
+No
+Finish
+
+$ sudo reboot
+
+###############################################################################
+
+## enable serial communication: http://www.hobbytronics.co.uk/raspberry-pi-serial-port 
+
+$ sudo nano /etc/inittab
+# comment out the following line
+# T0:23:respawn:/sbin/getty -L ttyAMAO 115200 vt100
+
+$ sudo nano /boot/cmdline.txt
+# delete all references to ttyAMA0
+
+$ sudo shutdown -r now
+$ sudo apt-get install minicom
+$ minicom -b 9600 -o -D /dev/tty/AMA0
+
+###############################################################################
+
+## set up OpenCV
+
+$ sudo apt-get install build-essential
+$ sudo apt-get install libopencv-dev
+$ sudo apt-get install cmake
+
+# running test code
+$ mkdir imreduce
+# download any image from the internet and rename it test.jpg (mind the extension)
+# copy the image, main.cpp, CMakeLists.txt inside the imreduce folder
+$ cd imreduce
+$ cmake .
+$ make
+$ ./a.out

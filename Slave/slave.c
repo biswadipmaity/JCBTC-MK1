@@ -1,4 +1,6 @@
 #include <htc.h>
+volatile bit IOFS_bit   @ ((unsigned)&OSCCON*8)+2;
+
 #pragma warning disable 359
 #pragma warning disable 1090
 
@@ -44,9 +46,10 @@ enum receive_state
 
 
 void main() {
-    OSCCON =0b01111100;
+ 	OSCCON =0b01111000;
 
-	hold(5);
+    while(IOFS_bit==0);
+    
     GIE=0;
     ANSEL =0x00;
     CMCON =0x07;
@@ -63,9 +66,11 @@ void main() {
 //	USARTWriteString("Hello\r");
 	init_queue();
 
-//	queue_push('T');
-//	queue_push('E');
-//	queue_push('S');
+	queue_push('T');
+	queue_push('e');
+	queue_push('s');
+	queue_push('t');
+
  	i2c_slave_init();
 
 	init_timer();

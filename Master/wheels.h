@@ -1,18 +1,4 @@
 /*
-#define M1A RA1
-#define M1B RA2
-
-#define M2A	RA3
-#define M2B	RA4
-
-#define M3A	RA5
-#define M3B	RE0
-
-#define M4A	RE2
-#define M4B	RE1
-*/
-
-
 #define M1A RE1
 #define M1B RE2
 
@@ -24,6 +10,19 @@
 
 #define M4A	RA2
 #define M4B	RA1
+*/
+
+#define M2A RA1
+#define M2B RA2
+
+#define M1A	RE0
+#define M1B	RA5
+
+#define M4A	RA4
+#define M4B	RA3
+
+#define M3A	RE2
+#define M3B	RE1
 
 bit M1A_mem;
 bit M1B_mem; 
