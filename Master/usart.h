@@ -64,6 +64,22 @@ void lcd_data_ISR(char c)
 	E=0;
 }
 
+void lcd_data_hex_ISR(unsigned char c)
+{
+	unsigned char tmp=c/16;
+
+	if(tmp<10)
+		lcd_data_hex('0'+tmp);
+	else
+		lcd_data_hex('a'+tmp-10);
+
+	tmp=c%16;
+	if(tmp<10)
+		lcd_data_hex('0'+tmp);
+	else
+		lcd_data_hex('a'+tmp-10);
+
+}
 
 void interrupt ISR_High(void)
 {
@@ -72,7 +88,6 @@ void interrupt ISR_High(void)
 	{
 		read_data=RCREG;
 		rpi_buffer_push(read_data);
-		//lcd_data_ISR(read_data);
 		RCIF=0;
 	}
 }

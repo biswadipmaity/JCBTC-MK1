@@ -6,6 +6,7 @@
 #pragma inline delay
 
 #pragma warning disable 1385
+#pragma warning disable 359
 
 unsigned char speed_motor1;
 unsigned char speed_motor2;
@@ -45,8 +46,7 @@ enum
 	SLEEP
 }receiver_i2c_state;
 
-
-enum 
+enum
 {
 	RPI_SLEEP,
 	RPI_START,
@@ -61,7 +61,7 @@ enum
 	RPI_STOP
 }receiver_pi_state;
 
-#include "xbee.h"
+#include "rpistates.h"
 
 unsigned char c;
 
@@ -93,26 +93,25 @@ void main()
 	
 	BACKLIT=0;
 	lcd_init();
-	
+
 	hold(100);
-	
+
 	lcd_command(0x80);
 	lcd_writeString(">");
-	
-	
+
 	init_i2c();
 	i2c_start();
 	idle_i2c();
-	
+
 	i2c_write(0xa1);
 	idle_i2c();
-	
+
 	i2c_start_read();
 	idle_i2c();
-	
+
 	BACKLIT=1;
 	initBacklit();
-		backlit_dim=dim_in;
+	backlit_dim=dim_in;
 	
 	USARTInit();
 
@@ -123,18 +122,36 @@ void main()
 	receiver_i2c_state=SLEEP;
 	receiver_pi_state=RPI_SLEEP;
 
-
+	if(i2c_test_write())
+		while(1)
+		{
+			c=i2c_read();
+			idle_i2c();
+			i2c_read_ack();
+			idle_i2c();
+ 			if(c!='$')
+			{
+lcd_data(c);
+			}
+			while(!rpi_buffer_empty())
+			{
+				char c=rpi_buffer_pop();
+				take_action(c);
+			}
+			hold(2);
+		}
+/* OLD CODE:
 	current_state=action_sleep;
 
 	if(i2c_test_write())
 		while(1)
-		{		
+		{
 			c=i2c_read();
 			idle_i2c();
 
 			i2c_read_ack();
 			idle_i2c();
-	
+
  			if(c!='$')
 			{
 //				lcd_data_hex(c);
@@ -151,27 +168,57 @@ void main()
 								USARTWriteByte(c);
 							}
 						break;
-	
+
 					case PI:
-							if(length==-1)
+						if (length == -1)
+						{
+							commandFlag = 1;
+							length = c;
+							int i;
+							for (i = 0; i < COMMAND_ARRAY_LENGTH; i++)
+								commandArray[i] = 0;
+						}
+						else if (commandFlag == 1)
+						{
+							commandFlag = 0;
+							receiver_pi_function = c;
+							length--;
+						}
+						else if (length>0)
+						{
+							//USARTWriteByte(c);
+							commandArray[length - 1] = c;
+							length--;
+						}
+						else if (c == i2c_RPi_DELIMITER)
+						{
+							switch (receiver_pi_function)
 							{
-								length=c;
+								case pi_sleep:											break;
+								case pi_setMotors:		setMotors(commandArray);		break;
+								case pi_setMotor:		setMotor(commandArray);			break;
+								case pi_getMotor:		getMotor(commandArray);			break;
+								case pi_clearLCD:		clearLCD(commandArray);			break;
+								case pi_LCDSetCursor:	LCDSetCursor(commandArray);		break;
+								case pi_LCDPutChar:		LCDPutChar(commandArray);		break;
+								case pi_LCDPrint:		LCDPrint(commandArray);			break;
+								case pi_getNetwork:		getNetwork(commandArray);		break;
+								case pi_networkMessage:	networkMessage(commandArray);	break;
+								case pi_getTilt:		getTilt(commandArray);			break;
+								case pi_getPan:			getPan(commandArray);			break;
+								case pi_setTilt:		setTilt(commandArray);			break;
+								case pi_setPan:			setPan(commandArray);			break;
+								case pi_ping:			ping(commandArray);				break;
+								default:												break;
 							}
-							else if(length>0)
-							{
-								USARTWriteByte(c);
-								length--;
-							}
-							else if(c==i2c_RPi_DELIMITER)
-							{
-								receiver_i2c_state=SLEEP;
-							}
-							else //error
-							{
-								receiver_i2c_state=SLEEP;
-							}
+							receiver_i2c_state = SLEEP;
+						}
+						else //error
+						{
+							receiver_i2c_state = SLEEP;
+						}
 						break;
-	
+
 					case i2c_MASTER:
 							if(length==-1)
 							{
@@ -190,10 +237,10 @@ void main()
 							else //Error
 							{
 								receiver_i2c_state=SLEEP;
-	
+
 							}
 						break;
-	
+
 					case SLEEP:
 							if(c==i2c_RPi_DELIMITER)
 							{
@@ -223,6 +270,7 @@ void main()
 			if(current_state!=action_sleep)
 				continue;
 
+// NOTE: COMMENTED APPREHENDING CONFLICT WITH STATE MACHINE ABOVE, HOWEVER, BUFFER MUST BE FLUSHED
 			while(!rpi_buffer_empty())
 			{
 				char c=rpi_buffer_pop();
@@ -236,4 +284,6 @@ void main()
 		}
 	lcd_command(0xa8);	//Next Line={128+40}H
 	lcd_writeString("JCBTC");
+
+*/
 }
